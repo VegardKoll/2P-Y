@@ -103,7 +103,7 @@ footer{margin-top:2.5rem;font-size:.85rem;color:var(--muted)}
 @media print{
   .testbtn,.quiz,.savebox,.badge{display:none!important}
   body{background:#fff;color:#000;font-size:11pt}
-  .tools,.name input,details,.seg span,.mapnote{display:none!important}
+  .tools,.delfilter,.name input,details,.seg span,.mapnote{display:none!important}
   .theme,.map{break-inside:avoid;border-color:#999}
   .hide-done .goal.is-done,.hide-done .theme.complete{display:block}
   .printname{display:block!important}
@@ -144,6 +144,7 @@ table.qt th{font-weight:700}
 svg.fig{display:block;max-width:100%;height:auto;margin-top:.6rem}
 svg .db{fill:var(--d1)} svg .dg{fill:var(--done)}
 svg .sw{fill:var(--surface);stroke:var(--ink);stroke-width:1.2} svg .sg{fill:var(--done);stroke:var(--ink);stroke-width:1.2}
+svg .grid{stroke:var(--line);stroke-width:1} svg .gl2{stroke:var(--d2);stroke-width:2.5;fill:none}
 svg .ax{stroke:var(--muted);stroke-width:1.3;fill:none} svg .gl{stroke:var(--d1);stroke-width:2.5;fill:none}
 svg .hb{fill:var(--done-soft);stroke:var(--done);stroke-width:1.5}
 svg .lab{font-size:11px;fill:var(--muted);font-family:inherit}
@@ -160,6 +161,17 @@ figure.mini figcaption{font-size:.85rem;font-weight:700;text-align:center}
 .savemsg{font-weight:700;font-size:.92rem}
 @media (max-width:560px){.quiz{margin-left:1rem;margin-right:1rem}.testbtn{margin-right:.75rem}}
 
+.dtag{display:inline-block;margin-left:.45rem;font-size:.72rem;font-weight:700;padding:0 .45rem;border-radius:999px;border:1.5px solid var(--line);color:var(--muted);vertical-align:2px;white-space:nowrap}
+.dtag.d1{border-color:var(--d1);color:var(--d1)} .dtag.d2{border-color:var(--d2);color:var(--d2)}
+.delfilter{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface)}
+.delfilter button{font:inherit;font-size:.9rem;padding:.4rem .85rem;border:0;background:transparent;color:var(--ink);cursor:pointer}
+.delfilter button+button{border-left:1.5px solid var(--line)}
+.delfilter button[aria-pressed="true"]{background:var(--ink);color:var(--surface);font-weight:700}
+.goal.delhide,.theme.nogoals{display:none!important}
+.seg.narrow span{display:none}
+.qdel{margin:0 0 .7rem;font-size:.88rem;font-weight:700;padding:.35rem .7rem;border-radius:8px;border-left:3px solid var(--line);background:var(--surface)}
+.qdel.d1{border-left-color:var(--d1)} .qdel.d2{border-left-color:var(--d2)}
+.delstat{display:flex;flex-wrap:wrap;gap:.4rem .6rem;margin:.9rem 0 0;font-size:.88rem}
 .printname{display:none;font-size:1rem;margin-top:.3rem}
 </style>
 </head>
@@ -185,16 +197,18 @@ figure.mini figcaption{font-size:.85rem;font-weight:700;text-align:center}
       <p id="scoretext">av eksamensoppgavene fra 2023–2026 handler om ting du har krysset av at du kan.</p>
     </div>
     <div class="bar" id="bar" role="list"></div>
+    <div class="delstat" id="delstat"></div>
     <p class="mapnote">Hver blokk er et tema. Jo bredere blokken er, jo oftere har temaet kommet på eksamen. Blokken fylles opp når du krysser av. Trykk på en blokk for å hoppe til temaet.</p>
   </section>
 
   <div class="tools">
     <label class="toggle"><input type="checkbox" id="hide"> Vis bare det jeg mangler</label>
+    <div class="delfilter" role="group" aria-label="Vis delmål for"><button type="button" data-delf="0" aria-pressed="true">Alle</button><button type="button" data-delf="1" aria-pressed="false">Del 1</button><button type="button" data-delf="2" aria-pressed="false">Del 2</button></div>
     <span class="spacer"></span>
     <button class="btn" id="print" type="button">Skriv ut</button>
     <button class="btn" id="reset" type="button">Nullstill</button>
   </div>
-  <p style="margin:.25rem 0 0;color:var(--muted);font-size:.95rem">Kryss av når du føler deg ferdig med et delmål – altså at du kunne løst en eksamensoppgave om det alene. Usikker? Trykk «Test deg» og prøv en oppgave først.</p>
+  <p style="margin:.25rem 0 0;color:var(--muted);font-size:.95rem">Kryss av når du føler deg ferdig med et delmål – altså at du kunne løst en eksamensoppgave om det alene. Usikker? Trykk «Test deg» og prøv en oppgave først. <b>Del 1</b> er uten hjelpemidler, <b>Del 2</b> er med alle hjelpemidler.</p>
   <details class="savebox" id="savebox">
     <summary>Lagre fremgangen eller fortsett på en annen enhet</summary>
     <div class="savebody">
@@ -504,20 +518,24 @@ const THEMES = [
 "Endre et program litt så det svarer på et nytt spørsmål"]}
 ]
 ;
+const DEL={prosent:[1,1,1,1,1,1,1,1,2,2],sentral:[1,2,1,1,1,0],potens:[1,1,1,1,1,1],prop:[1,1,1,1,1,1],funk:[1,2,1,0,2,1],modell:[2,1,2,2,2,0],frekvens:[1,1,1,1,1],monster:[1,1,1,1,1],present:[0,0,2,2],python:[1,2,1,1,1]};
+
+const DLAB = ["Del 1 og 2","Del 1","Del 2"];
+function delOf(tid, i){ return (typeof DEL !== "undefined" && DEL[tid] && DEL[tid][i] !== undefined) ? DEL[tid][i] : 0; }
 const TASKS = [{"s": "H23", "d": "Del 1", "o": 2, "t": "1,9 mill personbiler i 2002 og 2,9 mill i 2022: lineær modell og framskriving til 2030", "h": "Funksjoner og grafer"}, {"s": "V23", "d": "Del 1", "o": 4, "t": "Figurer av små sirkler: beskriv mønsteret, figur 4 og 5, uttrykk for figur n", "h": "Mønster og figurtall"}, {"s": "H23", "d": "Del 1", "o": 5, "t": "Figurer av små sirkler: beskriv mønsteret og finn uttrykk for figur n", "h": "Mønster og figurtall"}, {"s": "V24", "d": "Del 1", "o": 4, "t": "Figurer av små sirkler: figur 4 og figur 9, og uttrykk for figur n", "h": "Mønster og figurtall"}, {"s": "H24", "d": "Del 1", "o": 4, "t": "Figurer av små sirkler: figur 4 og figur 10, og formel for figur n", "h": "Mønster og figurtall"}, {"s": "V25", "d": "Del 1", "o": 6, "t": "Figurer av hvite og grønne kvadrat: antall grønne i figur 5, og formler for hvite og grønne i figur n", "h": "Mønster og figurtall"}, {"s": "H25", "d": "Del 1", "o": 6, "t": "Figurer av pinner: figur 4 og figur 10, formel for figur n, og hva Vivians program finner ut", "h": "Mønster og figurtall"}, {"s": "V26", "d": "Del 1", "o": 10, "t": "Figurer av grønne sirkler: figur 5 og figur 10, og formel for figur n", "h": "Mønster og figurtall"}, {"s": "H24", "d": "Del 1", "o": 5, "t": "Bedrift med 200 tonn CO₂ som reduseres 2,5 % per år: tolk linje 2 i programmet og verdien som skrives ut", "h": "Programmering (Python)"}, {"s": "V25", "d": "Del 1", "o": 8, "t": "Matsvinn 160 kg per familie: forklar hva Sofie vil finne ut og hva verdiene fra programmet forteller", "h": "Programmering (Python)"}, {"s": "V26", "d": "Del 1", "o": 12, "t": "Program med liste, len() og sum(): hva forteller verdien som skrives ut", "h": "Programmering (Python)"}, {"s": "V23", "d": "Del 1", "o": 2, "t": "6 kg deig fordelt likt på ulikt antall personer: lag grafisk framstilling", "h": "Proporsjonalitet"}, {"s": "V24", "d": "Del 1", "o": 1, "t": "Kioskpriser: er antall sjokolader og prisen per sjokolade proporsjonale størrelser", "h": "Proporsjonalitet"}, {"s": "H24", "d": "Del 1", "o": 3, "t": "Fire grafer: hvilke viser proporsjonale og omvendt proporsjonale størrelser", "h": "Proporsjonalitet"}, {"s": "V25", "d": "Del 1", "o": 3, "t": "Graf over pris per elev ved klassefest: pris ved 20 elever, og bestem funksjonsuttrykket", "h": "Proporsjonalitet"}, {"s": "H25", "d": "Del 1", "o": 5, "t": "Fire grafer p, q, r og s: hvilken er proporsjonal og hvilken er omvendt proporsjonal, og bestem uttrykkene", "h": "Proporsjonalitet"}, {"s": "V26", "d": "Del 1", "o": 9, "t": "Hytte til 15 000 kroner delt likt pluss 250 kroner i mat per elev: proporsjonalitet, og funksjonsuttrykk P(x)", "h": "Proporsjonalitet"}, {"s": "V26", "d": "Del 1", "o": 11, "t": "Kyllingfilet der 1 kg koster 120 kroner: hva skulle 1,4 kg og 250 g kostet ved proporsjonal prising", "h": "Proporsjonalitet"}, {"s": "V23", "d": "Del 1", "o": 1, "t": "Brødpris fra 40 til 42 kroner: vis at økningen er 5 %, og vurder påstander om videre økning på 2 kr per år", "h": "Prosent og vekstfaktor"}, {"s": "H23", "d": "Del 1", "o": 1, "t": "Enkeltbillett 25 kr mot fleksikort med 20 reiser til 415 kr: lønnsomhet og prosent spart", "h": "Prosent og vekstfaktor"}, {"s": "V24", "d": "Del 1", "o": 2, "t": "Småbakst 2 for 32 kroner eller 4 for 48 kroner: hvor mange prosent lavere pris per bagett", "h": "Prosent og vekstfaktor"}, {"s": "H24", "d": "Del 1", "o": 1, "t": "Prisen ble satt opp med 12 kroner, som svarte til 30 %: hva kostet varen før", "h": "Prosent og vekstfaktor"}, {"s": "V25", "d": "Del 1", "o": 1, "t": "88 % av elevene deltar, 3 elever deltar ikke: hvor mange elever er det i klassen", "h": "Prosent og vekstfaktor"}, {"s": "V25", "d": "Del 1", "o": 4, "t": "Høyre 24 % og Frp 16 %, begge opp 4 prosentpoeng: størst prosentvis framgang", "h": "Prosent og vekstfaktor"}, {"s": "H25", "d": "Del 1", "o": 1, "t": "Pris opp fra 300 til 315 kroner: hvor mange prosent", "h": "Prosent og vekstfaktor"}, {"s": "V26", "d": "Del 1", "o": 1, "t": "En bonde leverer 5200 egg og 20 % er brune: hvor mange egg er brune", "h": "Prosent og vekstfaktor"}, {"s": "V26", "d": "Del 1", "o": 3, "t": "Fyll inn tabellen med vekstfaktor og tilhørende prosentvis endring", "h": "Prosent og vekstfaktor"}, {"s": "V26", "d": "Del 1", "o": 4, "t": "Pris ned 20 % og så opp 20 %: mer, mindre eller det samme", "h": "Prosent og vekstfaktor"}, {"s": "V26", "d": "Del 1", "o": 5, "t": "Uttrykket 40000·1,05·0,85²: hva forteller det om de tre prisendringene", "h": "Prosent og vekstfaktor"}, {"s": "V26", "d": "Del 1", "o": 6, "t": "Boliglånsrente ned fra 6 % til 5,46 %: prosentpoeng og prosent", "h": "Prosent og vekstfaktor"}, {"s": "V23", "d": "Del 1", "o": 3, "t": "Relativ frekvens 0,4 og kumulativ frekvens 16 for to søsken: forklar, og finn antall elever", "h": "Statistikk: frekvens og grupperte data"}, {"s": "V25", "d": "Del 1", "o": 7, "t": "Aldersfordeling for 100 medlemmer i klasser: vis at gjennomsnittet er ca. 38 år og medianen ca. 35 år", "h": "Statistikk: frekvens og grupperte data"}, {"s": "H25", "d": "Del 1", "o": 4, "t": "Pariserhjul med 20 vogner: vis at fem var tomme, gjennomsnitt og median, kumulativ frekvens for to personer", "h": "Statistikk: frekvens og grupperte data"}, {"s": "V26", "d": "Del 1", "o": 13, "t": "Aldersfordeling i klasser og kumulativ frekvens i prosent: tolk punktet A(50, 70) og finn antatt medianalder", "h": "Statistikk: frekvens og grupperte data"}, {"s": "H23", "d": "Del 1", "o": 4, "t": "Jogging der typetall er 5, median 8 og gjennomsnitt 9: lag to mulige datasett (vektet 2x)", "h": "Statistikk: sentralmål og spredning"}, {"s": "H24", "d": "Del 1", "o": 2, "t": "Arbeidstimer 10 dager: gjennomsnitt og median, og kumulativ frekvens for 5 timer", "h": "Statistikk: sentralmål og spredning"}, {"s": "V25", "d": "Del 1", "o": 2, "t": "Antall personer i skiheisvogner: median og gjennomsnitt, og kumulativ frekvens for 6 personer", "h": "Statistikk: sentralmål og spredning"}, {"s": "V26", "d": "Del 1", "o": 2, "t": "Antall vogner på togene: median, gjennomsnitt, variasjonsbredde og typetall, og relativ frekvens for 6 vogner", "h": "Statistikk: sentralmål og spredning"}, {"s": "H23", "d": "Del 1", "o": 3, "t": "Sola 2,0·10³⁰ kg og jorda 6,0·10²⁴ kg: hvor mange ganger større, svar på standardform", "h": "Tall, potenser og standardform"}, {"s": "V24", "d": "Del 1", "o": 3, "t": "Oslo 700 000 innbyggere og 150 liter vann per døgn: liter per måned på standardform", "h": "Tall, potenser og standardform"}, {"s": "V25", "d": "Del 1", "o": 5, "t": "Fyll inn fire av tallene 1–9 i regnestykke med tierpotenser slik at svaret blir størst mulig", "h": "Tall, potenser og standardform"}, {"s": "H25", "d": "Del 1", "o": 2, "t": "40 000 studenter kjøper 10 månedskort til 496 kroner: samlet beløp på standardform", "h": "Tall, potenser og standardform"}, {"s": "H25", "d": "Del 1", "o": 3, "t": "Sorter tall som 0,02·10², 3², 2⁰, 8⁰, 3·10⁻¹ og 4⁻¹ i stigende rekkefølge", "h": "Tall, potenser og standardform"}, {"s": "V26", "d": "Del 1", "o": 7, "t": "Regn ut 3 000 000 · 0,000 025", "h": "Tall, potenser og standardform"}, {"s": "V26", "d": "Del 1", "o": 8, "t": "Sorter tall som kvadratrot, potenser, 10⁻² og 10³ i stigende rekkefølge", "h": "Tall, potenser og standardform"}, {"s": "V23", "d": "Del 2", "o": 6, "t": "Tomflasker P(x)=1600·1,045ˣ: tolk modellen, beløp i mai, bruk program til å vise at målet ikke nås (6c vektet 3x)", "h": "Funksjoner og grafer"}, {"s": "H23", "d": "Del 2", "o": 1, "t": "Sjøtemperatur T(x) tredjegradsmodell: forskjell mellom høyeste og laveste, og gjennomsnittlig stigning i mars", "h": "Funksjoner og grafer"}, {"s": "V24", "d": "Del 2", "o": 1, "t": "Hytteleie H(x)=18000/x: tolk modellen, tegn graf, skjæring med y=2250, stigningstall mellom to punkter", "h": "Funksjoner og grafer"}, {"s": "H24", "d": "Del 2", "o": 1, "t": "Iste-salg F(x)=620·1,045ˣ: to ulike metoder, når over 2000 flasker, prosentvis økning over to år", "h": "Funksjoner og grafer"}, {"s": "H24", "d": "Del 2", "o": 4, "t": "Tre parkeringsavtaler med fast pris og dagpris: sett opp modeller og finn når avtale B lønner seg", "h": "Funksjoner og grafer"}, {"s": "V25", "d": "Del 2", "o": 1, "t": "Utslipp U(x)=5000·0,95ˣ+1000: tolk modellen, halvering, prosentvis reduksjon, stigningstall, og krav om 800 tonn", "h": "Funksjoner og grafer"}, {"s": "V26", "d": "Del 2", "o": 2, "t": "Mekkeklubb med tre medlemskap: sett opp B(x), S(x) og P(x), og finn når standard lønner seg", "h": "Funksjoner og grafer"}, {"s": "V23", "d": "Del 2", "o": 7, "t": "Prosjektet Sunne valg: modell a·xᵇ, stigningstall mellom to punkter, og stigningstall til tangent", "h": "Modellering og regresjon"}, {"s": "H23", "d": "Del 2", "o": 8, "t": "Klimagassutslipp 1990 og 2022: lineær og prosentvis reduksjonsmodell mot 2030, vurdert mot 2050-målet (8a vektet 2x)", "h": "Modellering og regresjon"}, {"s": "V24", "d": "Del 2", "o": 4, "t": "Instagram-følgere som øker 35 % per måned: vis modellen, øk veksten med 5 prosentpoeng per måned, sammenlikn august", "h": "Modellering og regresjon"}, {"s": "H24", "d": "Del 2", "o": 6, "t": "Hanne løper: modell L(x)=a·xᵇ fra tabell, når 45 minutter, gjennomsnittlig økning per dag", "h": "Modellering og regresjon"}, {"s": "V25", "d": "Del 2", "o": 5, "t": "Skjerf på 8 meter som skal bli 40 meter på 25 uker: lineær modell og når det er 17 meter", "h": "Modellering og regresjon"}, {"s": "V25", "d": "Del 2", "o": 6, "t": "Fuglebestand som halveres hvert femte år: vis at F(x)=12000·0,87ˣ, bestand etter 7 år, når redusert 35 %", "h": "Modellering og regresjon"}, {"s": "H25", "d": "Del 2", "o": 1, "t": "Nettbutikkens omsetning februar–juni: modell a·bˣ, månedlig vekst, når målet på 20 000 nås, og nødvendig vekst", "h": "Modellering og regresjon"}, {"s": "V26", "d": "Del 2", "o": 1, "t": "Utslipp som skal halveres hvert sjette år: vis modellen U(x)=16000·0,89ˣ, prosent per år, gjennomsnittlig reduksjon", "h": "Modellering og regresjon"}, {"s": "V23", "d": "Del 2", "o": 4, "t": "Sykkelhjelmundersøkelse mandag–fredag: vis Madelen hvordan hun kan presentere datamaterialet (vektet 3x)", "h": "Presentasjon av datamateriale"}, {"s": "H23", "d": "Del 2", "o": 6, "t": "Helsefagarbeidere 2015–2022 fordelt på kjønn: lag framstillinger til et foredrag (vektet 2x)", "h": "Presentasjon av datamateriale"}, {"s": "V24", "d": "Del 2", "o": 7, "t": "Lærlinger i Oslo, Rogaland og Norge 2018–2022: lag framstillinger til en presentasjon", "h": "Presentasjon av datamateriale"}, {"s": "H24", "d": "Del 2", "o": 7, "t": "Tidsbruk for menn og kvinner i 1970, 1990 og 2010: lag framstillinger til en presentasjon", "h": "Presentasjon av datamateriale"}, {"s": "V25", "d": "Del 2", "o": 7, "t": "Fødte, døde, fødselsrate og fruktbarhetstall 1983–2023: lag framstillinger og prosentvise endringer til et foredrag", "h": "Presentasjon av datamateriale"}, {"s": "H25", "d": "Del 2", "o": 3, "t": "Internettbruk i aldersgrupper 2020–2024: lag framstillinger og trekk fram to funn", "h": "Presentasjon av datamateriale"}, {"s": "V26", "d": "Del 2", "o": 4, "t": "Nyhetsvaner i 2019 og 2025 og nyhetsunngåelse: gjør beregninger og lag diagrammer til en presentasjon", "h": "Presentasjon av datamateriale"}, {"s": "H23", "d": "Del 2", "o": 7, "t": "Utslipp 40 tonn som reduseres 5 % per år: sum over tre år, program for sum over lang tid, og test av formelen T=u/p·100", "h": "Programmering (Python)"}, {"s": "V24", "d": "Del 2", "o": 6, "t": "BSU-konto med 6,8 % rente: hva vil Thea finne ut, og forklar hver linje i programkoden", "h": "Programmering (Python)"}, {"s": "H23", "d": "Del 2", "o": 5, "t": "Vase og roser: kommenter Emilie og Emma sine påstander om proporsjonalitet og omvendt proporsjonalitet", "h": "Proporsjonalitet"}, {"s": "V25", "d": "Del 2", "o": 4, "t": "Antibac i tre størrelser: hva skulle kannen og sprayflasken kostet ved proporsjonal prising", "h": "Proporsjonalitet"}, {"s": "H25", "d": "Del 2", "o": 6, "t": "Juletre og julekuler: svar på spørsmålene om proporsjonalitet og omvendt proporsjonalitet", "h": "Proporsjonalitet"}, {"s": "V23", "d": "Del 2", "o": 3, "t": "Vare A opp 7 % og vare B ned 7 % hver måned: er Malins påstand riktig", "h": "Prosent og vekstfaktor"}, {"s": "H23", "d": "Del 2", "o": 3, "t": "Prisøkning på 160 kroner svarer til 2,5 %: hvor mange prosent hadde 240 kroner vært", "h": "Prosent og vekstfaktor"}, {"s": "H23", "d": "Del 2", "o": 4, "t": "Handlenett i tre farger med ulikt salgsforhold og ulik prisøkning: samlet inntektsøkning (vektet 2x)", "h": "Prosent og vekstfaktor"}, {"s": "V24", "d": "Del 2", "o": 2, "t": "Fastrenteinnskudd på 450 000 kroner: prosentpoeng og prosent forskjell, og renteinntekter", "h": "Prosent og vekstfaktor"}, {"s": "H24", "d": "Del 2", "o": 3, "t": "Oppgavepar som 10 % av 50 og 50 % av 10: argumenter for at slike par alltid gir samme svar", "h": "Prosent og vekstfaktor"}, {"s": "H24", "d": "Del 2", "o": 8, "t": "Sykkeltrening 40 km første uke med 5 % økning per uke: uke 50 og samlet distanse", "h": "Prosent og vekstfaktor"}, {"s": "H25", "d": "Del 2", "o": 4, "t": "Tre personer med 100 000 kroner hver i aksjefond, sparekonto og aksjer: lag oversikt over beløpene i 2025", "h": "Prosent og vekstfaktor"}, {"s": "V23", "d": "Del 2", "o": 5, "t": "Årslønn i klasser med frekvens: gjennomsnitt og median, og hvilket sentralmål passer best (5a vektet 3x)", "h": "Statistikk: frekvens og grupperte data"}, {"s": "V24", "d": "Del 2", "o": 5, "t": "Histogram over tid brukt på lekser: argumenter for fire påstander om frekvens, relativ frekvens, gjennomsnitt og median", "h": "Statistikk: frekvens og grupperte data"}, {"s": "H25", "d": "Del 2", "o": 5, "t": "Aldersfordelingen i Åseral kommune i klasser: forutsetninger, gjennomsnittsalder, andel eldre enn gjennomsnittet", "h": "Statistikk: frekvens og grupperte data"}, {"s": "V23", "d": "Del 2", "o": 2, "t": "12 kolleger og kaffekopper, ett tall mangler: kan gjennomsnittet være mer enn fire", "h": "Statistikk: sentralmål og spredning"}, {"s": "H23", "d": "Del 2", "o": 2, "t": "De 11 mestscorende i eliteserien: typetall, variasjonsbredde, median, gjennomsnitt, standardavvik, sammenlikn med 2021", "h": "Statistikk: sentralmål og spredning"}, {"s": "V24", "d": "Del 2", "o": 3, "t": "Solveigs 20 skiturer mot Miriams tall: sammenlikn sentralmål og standardavvik, og tolk kumulativ frekvens", "h": "Statistikk: sentralmål og spredning"}, {"s": "H24", "d": "Del 2", "o": 5, "t": "Quizlag: median, gjennomsnitt og standardavvik for lag A, og konstruer aldersfordelinger for lag B og C", "h": "Statistikk: sentralmål og spredning"}, {"s": "V25", "d": "Del 2", "o": 3, "t": "Alderen til 10 personer i et rom: endrer medianen seg, og kan gjennomsnittet bli 30 år", "h": "Statistikk: sentralmål og spredning"}, {"s": "H25", "d": "Del 2", "o": 2, "t": "De ti største tettstedene i Norge: median, gjennomsnitt, standardavvik og variasjonsbredde, gjennomsnitt mot median, sammenlikn med Danmark", "h": "Statistikk: sentralmål og spredning"}, {"s": "V26", "d": "Del 2", "o": 3, "t": "Fraværsdager hos 15 ansatte: gjennomsnitt, median, standardavvik, kumulativ frekvens, og sammenlikning med bedrift B", "h": "Statistikk: sentralmål og spredning"}, {"s": "V23", "d": "Del 2", "o": 1, "t": "Kina og India: 2,86 mrd mennesker, 91 kg ris per person per år i 10 år, svar på standardform", "h": "Tall, potenser og standardform"}, {"s": "H24", "d": "Del 2", "o": 2, "t": "Bakterier per cm³ kjøkkensvamp: antall i 150 cm³ og lengden av en rekke av bakterier, på standardform", "h": "Tall, potenser og standardform"}, {"s": "V25", "d": "Del 2", "o": 2, "t": "Tårn av kronestykker like høyt som Burj Khalifa: antall på standardform", "h": "Tall, potenser og standardform"}];
-const SETT = {V23:"Våren 2023",H23:"Høsten 2023",V24:"Våren 2024",H24:"Høsten 2024",V25:"Våren 2025",H25:"Høsten 2025",V26:"Våren 2026"};
-const ORDER = ["V26","H25","V25","H24","V24","H23","V23"];
+const SETT = {V22:"Våren 2022",H22:"Høsten 2022",V23:"Våren 2023",H23:"Høsten 2023",V24:"Våren 2024",H24:"Høsten 2024",V25:"Våren 2025",H25:"Høsten 2025",V26:"Våren 2026"};
+const ORDER = ["V26","H25","V25","H24","V24","H23","V23","H22","V22"];
 const KEY = "2py-avkrysning-v1";
 const TOTAL = TASKS.length;
 
-let state = { checked:{}, tested:{}, name:"", hide:false };
+let state = { checked:{}, tested:{}, name:"", hide:false, delf:0 };
 try { const s = localStorage.getItem(KEY); if (s) state = Object.assign(state, JSON.parse(s)); } catch(e) {}
 if (!state.tested) state.tested = {};
 const ALLIDS = []; THEMES.forEach(t => t.mal.forEach((_,i) => ALLIDS.push(t.id+"-"+i)));
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} }
 
 THEMES.forEach(t => {
-  t.tasks = TASKS.filter(x => x.h === t.navn)
+  t.tasks = TASKS.filter(x => x.h === t.navn || x.h === t.id)
     .sort((a,b) => ORDER.indexOf(a.s)-ORDER.indexOf(b.s) || a.d.localeCompare(b.d) || a.o-b.o);
   t.d1 = t.tasks.filter(x => x.d === "Del 1").length;
   t.d2 = t.tasks.length - t.d1;
@@ -552,7 +570,8 @@ THEMES.forEach(t => {
     </div>
     <ul class="goals">${t.mal.map((m,i) => {
       const id = t.id+"-"+i;
-      return `<li class="goal" data-id="${id}"><label><input type="checkbox" data-id="${id}"><span>Jeg kan ${esc(m.charAt(0).toLowerCase()+m.slice(1))}<span class="badge" hidden>Testet</span></span></label><button type="button" class="testbtn" data-test="${id}" aria-expanded="false">Test deg</button><div class="quiz" hidden></div></li>`;
+      const d = delOf(t.id, i);
+      return `<li class="goal" data-id="${id}" data-del="${d}"><label><input type="checkbox" data-id="${id}"><span>Jeg kan ${esc(m.charAt(0).toLowerCase()+m.slice(1))}<span class="dtag d${d}">${DLAB[d]}</span><span class="badge" hidden>Testet</span></span></label><button type="button" class="testbtn" data-test="${id}" aria-expanded="false">Test deg</button><div class="quiz" hidden></div></li>`;
     }).join("")}</ul>
     <details><summary>Se eksamensoppgavene om dette (${t.tasks.length})</summary>
       <div class="tasks"><table><tbody>${t.tasks.map(x =>
@@ -568,7 +587,7 @@ themesEl.addEventListener("change", e => {
 });
 
 function render(){
-  let cover = 0, done = 0, all = 0;
+  let cover = 0, done = 0, all = 0; const dc = [[0,0],[0,0],[0,0]];
   THEMES.forEach(t => {
     const n = t.mal.length;
     const k = t.mal.filter((_,i) => state.checked[t.id+"-"+i]).length;
@@ -581,14 +600,21 @@ function render(){
     t.sec.querySelector(".count").textContent = `${k} av ${n}`;
     t.sec.querySelector(".minibar i").style.width = (p*100)+"%";
     t.sec.classList.toggle("complete", p === 1);
+    let vis = 0;
     t.sec.querySelectorAll(".goal").forEach(li => {
-      const on = !!state.checked[li.dataset.id];
+      const on = !!state.checked[li.dataset.id], d = +li.dataset.del, dh = state.delf && d && d !== state.delf;
+      li.classList.toggle("delhide", !!dh);
+      if (!dh && !(state.hide && on)) vis++;
+      dc[d][0]++; if (on) dc[d][1]++;
       li.classList.toggle("is-done", on);
       li.querySelector("input").checked = on;
       li.querySelector(".badge").hidden = !state.tested[li.dataset.id];
     });
+    t.sec.classList.toggle("nogoals", vis === 0 && !!state.delf);
   });
   document.getElementById("pct").textContent = Math.round(cover*100) + " %";
+  document.getElementById("delstat").innerHTML = `<span class="tag d1">Del 1: ${dc[1][1]} av ${dc[1][0]}</span><span class="tag d2">Del 2: ${dc[2][1]} av ${dc[2][0]}</span><span class="tag">Begge deler: ${dc[0][1]} av ${dc[0][0]}</span>`;
+  document.querySelectorAll(".delfilter button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.delf === (state.delf||0))));
   document.getElementById("scoretext").textContent =
     `av eksamensoppgavene fra 2023–2026 handler om ting du har krysset av at du kan. Du har krysset av ${done} av ${all} delmål.`;
   const app = document.getElementById("app");
@@ -606,6 +632,7 @@ function parseNum(s){
   s = String(s).trim().replace(/[\s\u00A0]/g,"").replace(/[−–]/g,"-").replace(/(kr|%|år|km|egg|elever|besøk|min|stk)\.?$/i,"");
   if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g,"");
   s = s.replace(",",".");
+  const fm = s.match(/^(-?\d+)\/(\d+)$/); if (fm && +fm[2] !== 0) return +fm[1] / +fm[2];
   return /^-?\d*\.?\d+$/.test(s) ? parseFloat(s) : NaN;
 }
 function openQuiz(li, fresh){
@@ -615,7 +642,8 @@ function openQuiz(li, fresh){
   let body = "";
   if (q.type === "mc") body = `<div class="opts">${q.opts.map((o,i) => `<button type="button" class="opt" data-i="${i}">${o}</button>`).join("")}</div>`;
   else body = `<div class="ansrow"><input type="text" ${q.type==="num"?'inputmode="decimal"':'class="wide"'} aria-label="Svaret ditt" placeholder="${q.type==="list"?"For eksempel: 3 5 7 8 12":"Svaret ditt"}">${q.unit?`<span>${q.unit}</span>`:""}<button type="button" class="btn primary chk">Sjekk svaret</button></div>`;
-  box.innerHTML = `<div class="qtext">${q.q}</div>${body}<p class="fb" aria-live="polite"></p>
+  const dd = delOf(tid, idx), DTXT = ["Kan komme på både Del 1 og Del 2. Prøv gjerne uten hjelpemidler først.","Del 1 – uten hjelpemidler. Bruk bare blyant og papir.","Del 2 – alle hjelpemidler: GeoGebra, Python, kalkulator og regneark."];
+  box.innerHTML = `<p class="qdel d${dd}">${DTXT[dd]}</p><div class="qtext">${q.q}</div>${body}<p class="fb" aria-live="polite"></p>
     <div class="qactions"><button type="button" class="btn rev">Vis løsning</button><button type="button" class="btn nxt">Ny oppgave</button><button type="button" class="btn cls">Lukk</button></div>
     <div class="sol" hidden>${q.sol}</div>`;
   box.hidden = false;
@@ -698,11 +726,15 @@ const navn = document.getElementById("navn");
 navn.value = state.name || "";
 navn.addEventListener("input", () => { state.name = navn.value; save(); render(); });
 document.getElementById("hide").addEventListener("change", e => { state.hide = e.target.checked; save(); render(); });
+function fitLabels(){ THEMES.forEach(x => x.seg.classList.toggle("narrow", x.seg.offsetWidth < 44)); }
+window.addEventListener("resize", fitLabels);
+document.querySelectorAll(".delfilter button").forEach(b => b.addEventListener("click", () => { state.delf = +b.dataset.delf; save(); render(); }));
 document.getElementById("print").addEventListener("click", () => window.print());
 document.getElementById("reset").addEventListener("click", () => {
   if (confirm("Vil du fjerne alle avkrysningene? Dette kan ikke angres.")) { state.checked = {}; state.tested = {}; save(); render(); }
 });
 render();
+fitLabels();
 </script>
 </body>
 </html>
