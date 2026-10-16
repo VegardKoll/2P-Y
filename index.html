@@ -446,6 +446,68 @@ python:[
  return mc(`Hva må du endre hvis utslippet i stedet skal reduseres med 8 % per år?${code}`,'Linje 4: endre 0.95 til 0.92.',['Linje 4: endre 0.95 til 0.08.','Linje 4: endre 0.95 til 1.08.','Linje 3: endre 100 til 92.'],'En nedgang på 8 % gir vekstfaktor 1 − 0,08 = 0,92. I Python skrives desimaltall med punktum: 0.92.');}
 ]};
 
+// ---------- Flere varianter (felles for alle fag) ----------
+const X={};
+X.bolle=()=>{const it=P([['boller','bolle'],['yoghurter','yoghurt'],['batterier','batteri'],['bokser brus','boks'],['pakker tyggis','pakke'],['epler','eple']]);
+ let u1,r,u2;do{u1=P([10,12,15,16,20,24,25,30,40,8]);r=P([10,20,25,50]);u2=u1*(1-r/100);}while(u2%1!==0&&u2*2%1!==0);
+ const n1=R(1,3),n2=n1+R(2,4),p1=n1*u1,p2=n2*u2;
+ return num(`Butikken har to tilbud på ${it[0]}: ${n1} for ${nf(p1)} kr eller ${n2} for ${nf(p2)} kr. Hvor mange prosent lavere er prisen per ${it[1]} i det største tilbudet?`,r,0.01,'%',`Pris per ${it[1]}: ${nf(p1)}/${n1} = ${nf(u1)} kr og ${nf(p2)}/${n2} = ${nf(u2)} kr. Forskjellen er ${nf(u1-u2)} kr, og ${nf(u1-u2)} / ${nf(u1)} = <b>${r} %</b>.`);};
+X.sentralmal=()=>{const S=P([
+ ['Månedslønnen til seks ansatte i en liten bedrift er 30 000, 32 000, 33 000, 35 000, 36 000 og 250 000 kroner.','en typisk lønn','Medianen','Én ekstrem verdi trekker gjennomsnittet langt opp. Medianen påvirkes nesten ikke.'],
+ ['Seks hus i en gate ble solgt for 3,1, 3,4, 3,5, 3,6, 3,8 og 25 millioner kroner.','en typisk huspris','Medianen','Det dyre huset er en uteligger som drar gjennomsnittet opp. Medianen viser best hva som er vanlig.'],
+ ['En skobutikk skal bestille flere sko i størrelsen som selges mest. Salget siste uke: 38, 39, 39, 40, 40, 40, 41, 42, 43, 44.','hvilken størrelse de bør bestille','Typetallet','Butikken trenger den størrelsen flest kjøper – det er typetallet (40).'],
+ ['Tidene til åtte løpere på 5 km var 24, 25, 25, 26, 27, 27, 28 og 29 minutter.','en typisk tid, når det ikke er noen ekstreme verdier','Gjennomsnittet','Uten uteliggere gir gjennomsnittet et godt bilde, og det bruker alle verdiene.'],
+ ['Et lag scoret 0, 1, 1, 2, 1, 0, 1, 9, 1 og 2 mål i ti kamper.','hvor mange mål laget vanligvis scorer','Medianen','Kampen med 9 mål er en uteligger. Medianen (1) beskriver en vanlig kamp bedre enn gjennomsnittet (1,8).'],
+ ['En familie hadde strømregninger på 900, 950, 1000, 1000, 1050 og 6200 kroner (én måned med feil på varmtvannstanken).','en vanlig strømregning','Medianen','Måneden med 6200 kr er en uteligger. Medianen påvirkes ikke av den.'],
+ ['Klassen fikk karakterene 2, 3, 3, 4, 4, 4, 4, 5, 5 og 6. Læreren vil vite hvilken karakter flest fikk.','hvilken karakter flest fikk','Typetallet','«Flest» spør etter den vanligste verdien – typetallet (4).']]);
+ const O=['Gjennomsnittet','Medianen','Typetallet','Variasjonsbredden'];return mc(`${S[0]} Hvilket mål passer best for å beskrive ${S[1]}?`,S[2],O.filter(o=>o!==S[2]),S[3]);};
+X.propGraf=()=>{const k1=P([0.5,0.7,0.9]),K=P([1.6,2.2,3]),hyp=(()=>{let d='';for(let i=0;i<=24;i++){const x=0.45+i*0.15,y=K/x,px=10+x*30,py=100-y*14;d+=(i?' L ':'M ')+px.toFixed(1)+' '+Math.max(py,8).toFixed(1);}return d;})();
+ const b=R(18,40),G=[['prop',`M 10 100 L 130 ${(100-120*k1).toFixed(0)}`],['omv',hyp],['lin',`M 10 ${100-b} L 130 ${Math.max(10,100-b-80*k1).toFixed(0)}`],['ned',`M 10 ${R(20,40)} L 130 ${R(80,95)}`]],o=sh(G),L='ABCD',want=P(['prop','omv','lin']);
+ const txt={prop:'proporsjonale størrelser',omv:'omvendt proporsjonale størrelser',lin:'en lineær sammenheng som ikke er proporsjonal'}[want];
+ const svg=o.map((g,i)=>`<figure class="mini"><svg viewBox="0 0 140 112" width="140" height="112" aria-label="Graf ${L[i]}"><path d="M10 8 V100 H134" class="ax"/><path d="${g[1]}" class="gl"/><text x="2" y="110" class="lab">0</text></svg><figcaption>Graf ${L[i]}</figcaption></figure>`).join(''),ci=o.findIndex(g=>g[0]===want);
+ const q=mc(`Hvilken graf viser ${txt}?<div class="minis">${svg}</div>`,'Graf '+L[ci],[0,1,2,3].filter(i=>i!==ci).map(i=>'Graf '+L[i]),'Proporsjonale størrelser gir en rett linje gjennom origo. Omvendt proporsjonale gir en kurve som synker raskt og flater ut, uten å treffe aksene. En rett linje som ikke går gjennom origo er lineær, men ikke proporsjonal.');q.opts=['Graf A','Graf B','Graf C','Graf D'];q.correct=ci;return q;};
+X.fastTillegg=()=>{const s=P([
+ ()=>{const a=P([39,49,50,60]),b=P([12,15,18]);return [`En taxi koster ${a} kr i startpris og ${b} kr per km. Er prisen proporsjonal med antall km?`,false,`Prisen er ${a} kr selv om du kjører 0 km, så grafen går ikke gjennom origo og pris / km er ikke konstant.`];},
+ ()=>{const a=P([99,149,199]),b=P([10,20,25]);return [`Et mobilabonnement koster ${a} kr i måneden pluss ${b} kr per GB data. Er månedsprisen proporsjonal med antall GB?`,false,`Det faste beløpet på ${a} kr gjør at prisen ikke er 0 når du bruker 0 GB.`];},
+ ()=>{const a=P([39,49]),b=P([1.2,1.5,0.9]);return [`Strømregningen består av et fastbeløp på ${a} kr per måned pluss ${nf(b)} kr per kWh. Er regningen proporsjonal med strømforbruket?`,false,`Fastbeløpet gjør at regningen ikke er 0 kr ved 0 kWh.`];},
+ ()=>{const p=P([25,30,35]);return [`Epler koster ${p} kr per kg, og det er ingen andre kostnader. Er prisen proporsjonal med antall kg?`,true,`Pris = ${p} · antall kg. Forholdet pris / kg er alltid ${p}, og 0 kg koster 0 kr.`];},
+ ()=>{const a=P([300,500]),b=P([350,400,450]);return [`Et treningssenter tar ${a} kr i innmeldingsavgift og ${b} kr per måned. Er totalprisen proporsjonal med antall måneder?`,false,`Innmeldingsavgiften gjør at totalprisen ikke er 0 ved 0 måneder.`];},
+ ()=>{const p=P([18,22,24]);return [`En arbeider får ${p} kr per kasse jordbær hun plukker, og ingenting annet. Er lønnen proporsjonal med antall kasser?`,true,`Lønn = ${p} · antall kasser. Grafen er en rett linje gjennom origo.`];}])();
+ const O=['Ja, fordi forholdet mellom størrelsene er konstant og grafen går gjennom origo.','Nei, fordi det faste beløpet gjør at forholdet mellom størrelsene ikke er konstant.','Ja, fordi prisen øker når mengden øker.','Nei, fordi størrelsene er omvendt proporsjonale.'];
+ return mc(s[0],s[1]?O[0]:O[1],O.filter((_,i)=>i!==(s[1]?0:1)),s[2]+' At noe øker når noe annet øker, er ikke nok til at det er proporsjonalt.');};
+X.omvPunkt=()=>{const K=P([12,18,20,24,30,36,40,48,60]),dv=[];for(let d=2;d<K;d++)if(K%d===0)dv.push(d);const a=P(dv),b=P(dv.filter(x=>x!==a)),c=P(dv.filter(x=>x!==a&&x!==b)),pt=(x,y)=>`(${x}, ${nf(y)})`;
+ return mc(`Hvilket punkt ligger på grafen til y = ${K} / x?`,pt(a,K/a),[pt(a,K-a),pt(b,K/b+1),pt(c,2*K/c),pt(a,K/a+2),pt(b,K/b-1)],`Sjekk at x · y = ${K}: ${a} · ${nf(K/a)} = ${K}. Svar: <b>${pt(a,K/a)}</b>.`);};
+X.vurdere=()=>{const s=P([
+ ['Salget av iste er F(x) = 620 · 1,045<sup>x</sup>, der x er antall måneder. Hvorfor bør vi ikke bruke modellen til å si noe om salget om 50 år?','Modellen vokser uten grense, mens salget i virkeligheten har en øvre grense.',['Eksponentielle modeller gjelder bare for negative x.','1,045 er for lite til å gi vekst.','Modellen kan brukes, fordi den er laget med regresjon.'],'Om 50 år gir modellen et helt urealistisk tall. En modell gjelder best i området dataene kommer fra.'],
+ ['Høyden til et barn er h(x) = 6x + 50 cm, der x er alderen i år. Hva er det største problemet med modellen?','Barn slutter å vokse, så modellen gjelder bare de første årene.',['Stigningstallet burde vært negativt.','Modellen burde vært omvendt proporsjonal.','Det er ikke noe problem, modellen gjelder hele livet.'],'Med x = 40 gir modellen 290 cm.'],
+ ['Antall innbyggere i en bygd er B(x) = 1200 − 35x, der x er antall år fra nå. Hva skjer hvis vi bruker modellen langt fram i tid?','Modellen gir etter hvert et negativt antall innbyggere, noe som er umulig.',['Modellen gir et konstant antall innbyggere.','Modellen vokser uten grense.','Ingenting, lineære modeller gjelder alltid.'],'1200 − 35x blir negativ når x > 34. Modellen kan bare brukes et begrenset antall år.'],
+ ['Antall smittede i et utbrudd er S(x) = 40 · 1,3<sup>x</sup>, der x er antall dager. Hvorfor kan ikke modellen gjelde i mange måneder?','Det er et begrenset antall mennesker som kan smittes, så veksten må flate ut.',['Smitte følger alltid en lineær modell.','Vekstfaktoren 1,3 betyr at antallet synker.','Modellen gjelder for alltid fordi den er eksponentiell.'],'Etter 60 dager gir modellen over 2 milliarder smittede. Virkeligheten har en øvre grense.'],
+ ['En modell for antall følgere på en konto er laget ut fra tall for januar til juni. Når er modellen mest pålitelig?','I perioden dataene kommer fra, og litt fram i tid.',['Langt fram i tid, fordi da har modellen hatt tid til å bli presis.','Bare før januar.','Den er like pålitelig for alle tidspunkter.'],'Jo lenger vi går utenfor dataene, jo mer usikker blir modellen.'],
+ ['Temperaturen i en kopp te synker med T(x) = 90 − 4x grader, der x er minutter. Hvorfor gjelder ikke modellen etter én time?','Teen kan ikke bli kaldere enn rommet, men modellen gir minusgrader.',['Lineære modeller kan ikke brukes på temperatur.','Teen blir varmere etter en time.','Modellen gjelder, −150 grader er mulig.'],'Etter 60 minutter gir modellen −150 °C. Temperaturen flater ut mot romtemperaturen.']]);
+ return mc(s[0],s[1],s[2],s[3]);};
+X.toFormler=()=>{const T=P([0,1,2,3]),sq=(x,y,c)=>`<rect x="${x}" y="${y}" width="14" height="14" class="${c}"/>`;let X0=8,parts=[],H=0;
+ [1,2,3].forEach(n=>{const gw=n,gh=(T>=2)?n:1,corn=(T===1||T===3);for(let i=-1;i<=gw;i++)for(let j=-1;j<=gh;j++){const inG=i>=0&&i<gw&&j>=0&&j<gh,edge=!inG,corner=(i===-1||i===gw)&&(j===-1||j===gh);if(edge&&corner&&!corn)continue;parts.push(sq(X0+(i+1)*16,8+(j+1)*16,inG?'sg':'sw'));}
+  H=Math.max(H,(gh+2)*16+8);parts.push(`<text x="${X0}" y="__Y__" class="lab">Figur ${n}</text>`);X0+=(gw+2)*16+22;});
+ const svg=`<svg class="fig" viewBox="0 0 ${X0} ${H+22}" width="${Math.round(X0*1.3)}" height="${Math.round((H+22)*1.3)}" role="img" aria-label="Figur 1 til 3">${parts.join('').replace(/__Y__/g,H+14)}</svg>`;
+ const [w,t,why]=[['2n + 2','3n + 2','n grønne, n hvite over, n hvite under og 2 på endene.'],['2n + 6','3n + 6','n grønne. Hvit ramme: n + 2 over, n + 2 under og 2 på sidene.'],['4n','n² + 4n','n² grønne i et kvadrat, og n hvite på hver av de fire sidene.'],['4n + 4','(n + 2)²','n² grønne, og en hvit ramme med 4n + 4 kvadrater. Hele figuren er et kvadrat med side n + 2.']][T];
+ const tot=Math.random()<.5,c=tot?t:w,pool=tot?['3n + 2','3n + 6','n² + 4n','(n + 2)²','2n²','n² + 4','3n','4n + 4']:['2n + 2','2n + 6','4n','4n + 4','2n','n + 4','4n + 2','2n + 4'];
+ return mc(`Figurene er laget av hvite og grønne kvadrater. Hvilken formel gir ${tot?'det totale antallet kvadrater':'antall hvite kvadrater'} i figur n?${svg}`,c,sh(pool.filter(x=>x!==c)),`${why} Sjekk formelen mot figur 1, 2 og 3. Svar: <b>${c}</b>.`);};
+X.pyEndre=()=>{const S=P([200,500,1000]),f=P([0.95,0.9,0.97]),T=S/2,code=pre(`1  verdi = ${S}\n2  ar = 0\n3  while verdi > ${T}:\n4      verdi = verdi * ${f}\n5      ar = ar + 1\n6  print(ar)`),pc=Math.round((1-f)*100),c=R(0,3);
+ if(c===0){const T2=S/4;return mc(`Programmet finner ut når verdien er halvert. Hva må du endre for å finne ut når verdien er under ${T2}?${code}`,`Linje 3: endre ${T} til ${T2}.`,[`Linje 1: endre ${S} til ${T2}.`,`Linje 4: endre ${f} til 0.25.`,`Linje 6: skriv print(${T2}).`],'Betingelsen i while-løkka bestemmer når programmet stopper.');}
+ if(c===1){const p2=P([8,12,15]);return mc(`Hva må du endre hvis verdien i stedet skal synke med ${p2} % per år?${code}`,`Linje 4: endre ${f} til ${nf(1-p2/100).replace(',','.')}.`,[`Linje 4: endre ${f} til ${nf(p2/100).replace(',','.')}.`,`Linje 4: endre ${f} til ${nf(1+p2/100).replace(',','.')}.`,`Linje 3: endre ${T} til ${100-p2}.`],`En nedgang på ${p2} % gir vekstfaktor 1 − ${nf(p2/100)} = ${nf(1-p2/100)}. I Python skrives desimaltall med punktum.`);}
+ if(c===2)return mc(`Hva må du endre for at programmet skal skrive ut verdien etter løkka i stedet for antall år?${code}`,'Linje 6: endre til print(verdi).',['Linje 5: endre til ar = verdi.','Linje 2: endre til ar = verdi.','Linje 3: endre til while ar > verdi:'],'print skriver ut variabelen som står i parentes. Vil vi se verdien, må det stå print(verdi).');
+ return mc(`Hva må du endre hvis startverdien i stedet er ${S*2}, og du fortsatt vil finne når den er halvert?${code}`,`Linje 1 og linje 3: endre ${S} til ${S*2} og ${T} til ${S}.`,[`Bare linje 1: endre ${S} til ${S*2}.`,`Bare linje 3: endre ${T} til ${S}.`,`Linje 4: endre ${f} til ${2*f}.`],'Både startverdien og grensen i betingelsen må endres. Ellers finner programmet når verdien er under den gamle grensen.');};
+X.velgDiagram=()=>{const S=P([['Du vil vise hvor stor andel av elevene som velger hver av fem idretter. Til sammen blir det 100 %.','Sektordiagram'],['Du vil vise hvordan antall lærlinger har endret seg fra år til år fra 2015 til 2024.','Linjediagram'],['Du vil sammenligne hvor mange timer menn og kvinner brukte på husarbeid i 1970, 1990 og 2010.','Stolpediagram (gjerne gruppert)'],['Du vil vise hvordan budsjettet til en kommune er fordelt på skole, helse, vei og kultur.','Sektordiagram'],['Du vil vise temperaturen hver time gjennom et døgn.','Linjediagram'],['Du vil sammenligne antall solgte biler fra fem bilmerker i 2024.','Stolpediagram (gjerne gruppert)'],['Du har målt hvor mange minutter 80 elever bruker til skolen, gruppert i klasser som [0, 10⟩, [10, 20⟩ og så videre.','Histogram'],['Du vil vise hvordan folketallet i Bergen har utviklet seg fra 1950 til 2025.','Linjediagram'],['Du vil vise aldersfordelingen til deltakerne på et kurs, gruppert i aldersklasser med ulik bredde.','Histogram']]),O=['Sektordiagram','Linjediagram','Stolpediagram (gjerne gruppert)','Histogram'];
+ return mc(`${S[0]} Hvilket diagram passer best?`,S[1],O.filter(o=>o!==S[1]),'Sektordiagram: deler av en helhet. Linjediagram: utvikling over tid. Stolpediagram: sammenligne kategorier. Histogram: grupperte data i klasser.');};
+X.misvisende=()=>{const c=R(0,3);if(c===0)return GBASE_present1();
+ if(c===1)return mc('Et sektordiagram viser hvilket parti velgerne foretrekker: 45 %, 38 % og 32 %. Hva er galt?','Andelene summerer seg til mer enn 100 %, så de kan ikke vises som deler av én helhet.',['Det burde vært brukt flere farger.','Sektordiagram kan aldri vise prosent.','Ingenting er galt.'],'Et sektordiagram viser deler av en helhet, så andelene må til sammen bli 100 %. 45 + 38 + 32 = 115 %.');
+ if(c===2)return mc('Et linjediagram viser antall besøkende i årene 2010, 2015, 2016, 2017 og 2018, med lik avstand mellom alle årstallene på aksen. Hva er misvisende?','Avstanden mellom 2010 og 2015 er fem år, men ser ut som ett år, så utviklingen ser brattere ut der.',['Linjediagram skal ikke brukes for årstall.','Det burde vært et sektordiagram.','Det er for mange årstall.'],'Tidsaksen må ha jevn skala. Ellers blir stigningen i diagrammet feil.');
+ return mc('I et diagram vises omsetningen med to pengesekker. Omsetningen er doblet, og den andre sekken er tegnet dobbelt så høy og dobbelt så bred. Hva er misvisende?','Arealet av sekken blir fire ganger så stort, så økningen ser mye større ut enn en dobling.',['Pengesekker kan ikke brukes i diagrammer.','Sekken burde vært tre ganger så høy.','Ingenting, omsetningen er jo doblet.'],'Når både høyde og bredde dobles, blir arealet 2 · 2 = 4 ganger så stort. Øyet oppfatter arealet.');};
+function patchBase(G){GBASE_present1=G.present[1];G.prosent[7]=X.bolle;G.sentral[2]=X.sentralmal;G.prop[1]=X.propGraf;G.prop[3]=X.fastTillegg;G.prop[5]=X.omvPunkt;G.modell[5]=X.vurdere;G.monster[4]=X.toFormler;G.python[4]=X.pyEndre;G.present[0]=X.velgDiagram;G.present[1]=X.misvisende;}
+let GBASE_present1;
+
+patchBase(GEN);
+
 const THEMES = [
 {"id":"prosent","navn":"Prosent og vekstfaktor","bok":"Kap. 2 Prosent: 2A, 2B og 2C","kort":"Prosent","mal":[
 "Regne ut prosent av et tall (for eksempel 20 % av 5200)",
@@ -528,9 +590,10 @@ const ORDER = ["V26","H25","V25","H24","V24","H23","V23","H22","V22"];
 const KEY = "2py-avkrysning-v1";
 const TOTAL = TASKS.length;
 
-let state = { checked:{}, tested:{}, name:"", hide:false, delf:0 };
+let state = { checked:{}, tested:{}, name:"", hide:false, delf:0, recent:{} };
 try { const s = localStorage.getItem(KEY); if (s) state = Object.assign(state, JSON.parse(s)); } catch(e) {}
 if (!state.tested) state.tested = {};
+if (!state.recent) state.recent = {};
 const ALLIDS = []; THEMES.forEach(t => t.mal.forEach((_,i) => ALLIDS.push(t.id+"-"+i)));
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} }
 
@@ -635,9 +698,21 @@ function parseNum(s){
   const fm = s.match(/^(-?\d+)\/(\d+)$/); if (fm && +fm[2] !== 0) return +fm[1] / +fm[2];
   return /^-?\d*\.?\d+$/.test(s) ? parseFloat(s) : NaN;
 }
+function qsig(q){ const s = q.q + "|" + (q.opts || []).slice().sort().join("|"); let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h.toString(36); }
 function openQuiz(li, fresh){
   const id = li.dataset.id, [tid, idx] = [id.slice(0,id.lastIndexOf("-")), +id.slice(id.lastIndexOf("-")+1)];
-  if (fresh || !CURRENT[id]) CURRENT[id] = GEN[tid][idx]();
+  if (fresh || !CURRENT[id]) {
+    const rec = state.recent[id] || [];
+    let best = null, bestPos = Infinity;
+    for (let tries = 0; tries < 60; tries++) {
+      const cand = GEN[tid][idx](), pos = rec.indexOf(qsig(cand));
+      if (pos < 0) { best = cand; break; }
+      if (pos < bestPos) { best = cand; bestPos = pos; }
+    }
+    CURRENT[id] = best;
+    const s = qsig(best), r2 = rec.filter(x => x !== s); r2.push(s);
+    state.recent[id] = r2.slice(-10); save();
+  }
   const q = CURRENT[id], box = li.querySelector(".quiz");
   let body = "";
   if (q.type === "mc") body = `<div class="opts">${q.opts.map((o,i) => `<button type="button" class="opt" data-i="${i}">${o}</button>`).join("")}</div>`;
@@ -731,7 +806,7 @@ window.addEventListener("resize", fitLabels);
 document.querySelectorAll(".delfilter button").forEach(b => b.addEventListener("click", () => { state.delf = +b.dataset.delf; save(); render(); }));
 document.getElementById("print").addEventListener("click", () => window.print());
 document.getElementById("reset").addEventListener("click", () => {
-  if (confirm("Vil du fjerne alle avkrysningene? Dette kan ikke angres.")) { state.checked = {}; state.tested = {}; save(); render(); }
+  if (confirm("Vil du fjerne alle avkrysningene? Dette kan ikke angres.")) { state.checked = {}; state.tested = {}; state.recent = {}; save(); render(); }
 });
 render();
 fitLabels();
